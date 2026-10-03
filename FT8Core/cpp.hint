@@ -1,0 +1,2 @@
+#define FT8CORE_API __declspec(dllexport)
+#define FT8CORE_API __declspec(dllimport)

@@ -1,0 +1,27 @@
+# Visual Studio: carpetas y archivos que se generan solos
+.vs/
+bin/
+obj/
+x64/
+Debug/
+Release/
+*.user
+*.suo
+*.pdb
+*.ilk
+*.obj
+*.log
+*.tlog
+*.ipch
+packages/
+
+# Compilacion de JTTY (el script los vuelve a descargar y generar)
+jtty/wsjtx/
+jtty/obj/
+
+# Instalador generado
+instalador/Salida/
+
+# Datos personales: nunca al repositorio
+*.adi
+Pako_trafico.log
