@@ -14,6 +14,7 @@ Public Class FrmCat
     Private cmbPuerto As New ComboBox()
     Private cmbBaudios As New ComboBox()
     Private chkSplit As New CheckBox()
+    Private cmbModoRadio As New ComboBox()
     Private WithEvents btnProbar As New Button()
     Private WithEvents btnGuardar As New Button()
     Private btnCancelar As New Button()
@@ -31,7 +32,7 @@ Public Class FrmCat
         Me.StartPosition = FormStartPosition.CenterParent
         Me.MinimizeBox = False
         Me.MaximizeBox = False
-        Me.ClientSize = New Size(500, 330)
+        Me.ClientSize = New Size(500, 362)
 
         lblCarpeta.Text = Tr("Carpeta de Hamlib")
         lblCarpeta.AutoSize = True
@@ -73,13 +74,22 @@ Public Class FrmCat
         cmbBaudios.Items.AddRange(New Object() {"1200", "4800", "9600", "19200", "38400", "57600", "115200"})
         Me.Controls.Add(cmbBaudios)
 
+        ' Modo que se le pone al radio al cambiar de banda
+        Etiqueta(Tr("Modo del radio"), 15, 127)
+        cmbModoRadio.Location = New Point(140, 124)
+        cmbModoRadio.Width = 280
+        cmbModoRadio.DropDownStyle = ComboBoxStyle.DropDownList
+        cmbModoRadio.Items.AddRange(New Object() {"USB", Tr("DATA (USB de datos, PKTUSB)"), Tr("No cambiar el modo")})
+        cmbModoRadio.SelectedIndex = Cat.ModoRadio
+        Me.Controls.Add(cmbModoRadio)
+
         chkSplit.Text = Tr("Split (Fake It): mover el VFO para que el audio TX quede entre 1500 y 2000 Hz")
         chkSplit.AutoSize = True
-        chkSplit.Location = New Point(15, 130)
+        chkSplit.Location = New Point(15, 160)
         Me.Controls.Add(chkSplit)
 
         lblNota.AutoSize = False
-        lblNota.Location = New Point(15, 160)
+        lblNota.Location = New Point(15, 190)
         lblNota.Size = New Size(470, 110)
         lblNota.ForeColor = Color.DimGray
         lblNota.Text =
@@ -87,15 +97,15 @@ Public Class FrmCat
         Me.Controls.Add(lblNota)
 
         btnProbar.Text = Tr("Probar")
-        btnProbar.Location = New Point(15, 290)
+        btnProbar.Location = New Point(15, 322)
         btnProbar.Size = New Size(80, 27)
         Me.Controls.Add(btnProbar)
         btnGuardar.Text = Tr("Guardar")
-        btnGuardar.Location = New Point(315, 290)
+        btnGuardar.Location = New Point(315, 322)
         btnGuardar.Size = New Size(80, 27)
         Me.Controls.Add(btnGuardar)
         btnCancelar.Text = Tr("Cancelar")
-        btnCancelar.Location = New Point(405, 290)
+        btnCancelar.Location = New Point(405, 322)
         btnCancelar.Size = New Size(80, 27)
         btnCancelar.DialogResult = DialogResult.Cancel
         Me.Controls.Add(btnCancelar)
@@ -215,6 +225,7 @@ Public Class FrmCat
             .CatHamlib = txtHamlib.Text.Trim()
             .Save()
         End With
+        Cat.ModoRadio = Math.Max(0, cmbModoRadio.SelectedIndex)
         Me.DialogResult = DialogResult.OK
     End Sub
 End Class

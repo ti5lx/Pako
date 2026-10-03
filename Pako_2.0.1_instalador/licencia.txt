@@ -1,4 +1,4 @@
-﻿Pakö V.2.0.1  -  El comunicador Bribri
+﻿Pakö V.2.0.2  -  El comunicador Bribri
 Programa FT8 / FT4 / JTTY para radioafición.
 Copyright (C) 2026 TI2LX, Costa Rica.
 

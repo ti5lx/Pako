@@ -87,6 +87,7 @@ Public Module Idioma
         Cargar6()
         Cargar7()
         Cargar8()
+        Cargar9()
     End Sub
 
     Private Sub Cargar1()
@@ -399,5 +400,12 @@ Public Module Idioma
         A("Tecla", "", "Key", "Taste", "Tecla", "Клавиша", "按键", "キー")
         A("Texto que se transmite", "", "Text that is transmitted", "Gesendeter Text", "Texto que é transmitido", "Передаваемый текст", "发射的文本", "送信するテキスト")
         A("{0} te llama: F2 para darle el intercambio.", "", "{0} is calling you: F2 to send the exchange.", "{0} ruft dich: F2 sendet den Austausch.", "{0} está chamando você: F2 para enviar o intercâmbio.", "{0} вызывает вас: F2 — передать контрольный обмен.", "{0} 正在呼叫你：按 F2 发送交换内容。", "{0} が呼んでいます：F2 で交換内容を送信。")
+    End Sub
+    Private Sub Cargar9()
+        ' PTT por CAT y modo del radio
+        A("Modo del radio", "", "Radio mode", "Betriebsart des Funkgeräts", "Modo do rádio", "Режим радиостанции", "电台模式", "無線機のモード")
+        A("DATA (USB de datos, PKTUSB)", "", "DATA (data USB, PKTUSB)", "DATA (Daten-USB, PKTUSB)", "DATA (USB de dados, PKTUSB)", "DATA (цифровой USB, PKTUSB)", "DATA（数据 USB，PKTUSB）", "DATA（データ USB、PKTUSB）")
+        A("No cambiar el modo", "", "Do not change the mode", "Betriebsart nicht ändern", "Não mudar o modo", "Не менять режим", "不改变模式", "モードを変更しない")
+        A("PTT_CAT_SIN_RADIO", "El PTT está configurado por CAT, pero el radio no está conectado. Conéctalo en Configurar > Radio (CAT), o elige otra forma de PTT en Configurar > Puerto PTT.", "PTT is set to CAT, but the radio is not connected. Connect it in Settings > Radio (CAT), or choose another PTT method in Settings > PTT port.", "PTT ist auf CAT eingestellt, aber das Funkgerät ist nicht verbunden. Verbinde es unter Einstellungen > Funkgerät (CAT) oder wähle eine andere PTT-Methode unter Einstellungen > PTT-Port.", "O PTT está configurado por CAT, mas o rádio não está conectado. Conecte-o em Configurar > Rádio (CAT), ou escolha outra forma de PTT em Configurar > Porta PTT.", "PTT настроен через CAT, но радиостанция не подключена. Подключите её в Настройки > Радио (CAT) или выберите другой способ PTT в Настройки > Порт PTT.", "PTT 设置为通过 CAT 控制，但电台未连接。请在 设置 > 电台 (CAT) 中连接，或在 设置 > PTT 端口 中选择其他 PTT 方式。", "PTT は CAT 経由に設定されていますが、無線機が接続されていません。設定 > 無線機 (CAT) で接続するか、設定 > PTT ポート で別の PTT 方式を選んでください。")
     End Sub
 End Module

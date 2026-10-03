@@ -41,8 +41,9 @@ Public Class Form1
     Private entradaSel As Integer = -1       ' dispositivo de entrada (RX)
     Private salidaSel As Integer = -1        ' dispositivo de salida (TX)
     Private puertoSel As String = ""         ' puerto COM del PTT
-    Private lineaPtt As Integer = 0          ' linea que activa el PTT: 0 = RTS, 1 = DTR, 2 = RTS y DTR
-    Private Shared ReadOnly NombresLineaPtt As String() = {"RTS", "DTR", "RTS + DTR"}
+    ' Como se activa el PTT: 0 = RTS, 1 = DTR, 2 = RTS y DTR (puerto COM), 3 = comando por el CAT (sin puerto)
+    Private lineaPtt As Integer = 0
+    Private Shared ReadOnly NombresLineaPtt As String() = {"RTS", "DTR", "RTS + DTR", "CAT"}
     Private pruebaPttActiva As Boolean = False
     Private inicioPruebaPtt As DateTime
     Private Const MaxPruebaPttSeg As Integer = 30   ' la prueba de PTT se suelta sola a los 30 s
@@ -223,7 +224,7 @@ Public Class Form1
     ' Nombre del programa: Pako con dieresis en la o (se escribe con ChrW para que el archivo
     ' fuente no dependa de la codificacion)
     Public Shared ReadOnly NombrePrograma As String = "Pak" & ChrW(&HF6)
-    Public Const VersionPrograma As String = "2.0.1"
+    Public Const VersionPrograma As String = "2.0.2"
     Public Const Autor As String = "TI2LX"
     Public Shared ReadOnly Property TituloPrograma As String
         Get
@@ -653,7 +654,7 @@ Public Class Form1
                 If i >= 0 Then salidaSel = i
                 If .PuertoPtt <> "" AndAlso PuertosOrdenados().Contains(.PuertoPtt) Then puertoSel = .PuertoPtt
                 Try
-                    lineaPtt = Math.Max(0, Math.Min(2, CInt(Val(GetSetting("Pako", "Opciones", "LineaPtt", "0")))))
+                    lineaPtt = Math.Max(0, Math.Min(3, CInt(Val(GetSetting("Pako", "Opciones", "LineaPtt", "0")))))
                 Catch
                 End Try
                 LlenarMenuEntrada()
@@ -968,7 +969,7 @@ Public Class Form1
             mnuPuerto.DropDownItems.Add(item)
         Next
         mnuPuerto.Text = Tr("Puerto PTT (RTS)").Replace("RTS", NombresLineaPtt(lineaPtt)) & ":  " &
-                         If(puertoSel = "", "(" & Tr("ninguno") & ")", puertoSel)
+                         If(lineaPtt = 3, My.Settings.CatPuerto, If(puertoSel = "", "(" & Tr("ninguno") & ")", puertoSel))
     End Sub
 
     Private Sub ElegirLineaPtt_Click(sender As Object, e As EventArgs)
@@ -2291,6 +2292,15 @@ Public Class Form1
     ' PTT por RTS, DTR o ambos (Configurar > Puerto PTT)
     ' ==================================================================
     Private Function AbrirPuertoPtt() As Boolean
+        If lineaPtt = 3 Then
+            ' PTT por CAT: no se abre ningun puerto, el radio tiene que estar conectado por CAT
+            If Not Cat.Conectado Then
+                MessageBox.Show(Tr("PTT_CAT_SIN_RADIO"), NombrePrograma)
+                Return False
+            End If
+            mnuPuerto.Enabled = False
+            Return True
+        End If
         If puertoPtt IsNot Nothing AndAlso puertoPtt.IsOpen Then Return True
         If puertoSel = "" Then
             MessageBox.Show(Tr("Elige el puerto del PTT en Configurar > Puerto PTT."))
@@ -2314,7 +2324,9 @@ Public Class Form1
 
     Private Sub Ptt(encendido As Boolean)
         Try
-            If puertoPtt IsNot Nothing AndAlso puertoPtt.IsOpen Then
+            If lineaPtt = 3 Then
+                Cat.PonerPtt(encendido)
+            ElseIf puertoPtt IsNot Nothing AndAlso puertoPtt.IsOpen Then
                 ' La linea que no se usa queda siempre apagada
                 puertoPtt.RtsEnable = encendido AndAlso lineaPtt <> 1
                 puertoPtt.DtrEnable = encendido AndAlso lineaPtt <> 0

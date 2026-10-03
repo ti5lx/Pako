@@ -5,7 +5,7 @@
 ; ====================================================================
 
 #define Nombre      "Pakö"
-#define Version     "2.0.1"
+#define Version     "2.0.2"
 #define Autor       "TI2LX"
 #define Exe         "Pako.exe"
 ; Carpeta donde Visual Studio deja el programa compilado en Release x64

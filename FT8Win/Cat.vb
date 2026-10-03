@@ -268,8 +268,39 @@ Public Class Cat
         Return ok
     End Function
 
+    ' Modo que Pako le pone al radio al cambiar de banda (Configurar > Radio (CAT)):
+    '   0 = USB    1 = DATA (PKTUSB: USB de datos, el audio entra por atras o por USB)    2 = no tocar el modo
+    Public Shared Property ModoRadio As Integer
+        Get
+            Try
+                Return Math.Max(0, Math.Min(2, CInt(Val(GetSetting("Pako", "Opciones", "CatModo", "0")))))
+            Catch
+                Return 0
+            End Try
+        End Get
+        Set(value As Integer)
+            Try
+                SaveSetting("Pako", "Opciones", "CatModo", value.ToString())
+            Catch
+            End Try
+        End Set
+    End Property
+
     Public Shared Function PonerModoUsb() As Boolean
-        Return Comando("M USB 0") = "RPRT 0"
+        Select Case ModoRadio
+            Case 1 : Return Comando("M PKTUSB 0") = "RPRT 0"
+            Case 2 : Return True
+            Case Else : Return Comando("M USB 0") = "RPRT 0"
+        End Select
+    End Function
+
+    ' PTT por CAT: el radio pasa a transmitir con un comando, sin usar RTS ni DTR
+    Public Shared Function PonerPtt(encendido As Boolean) As Boolean
+        Dim r As String = Comando(If(encendido, "T 1", "T 0"))
+        Dim ok As Boolean = (r = "RPRT 0")
+        If Not ok AndAlso r.StartsWith("RPRT") Then UltimoError = Tr("El radio respondio {0}", r)
+        Trafico.Registrar("CAT", If(ok, TipoTrafico.Envio, TipoTrafico.[Error]), "PTT " & If(encendido, "ON", "OFF") & If(ok, "", "  -> " & r))
+        Return ok
     End Function
 
     ' Cada segundo: leer la frecuencia del radio
