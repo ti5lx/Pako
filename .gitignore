@@ -25,3 +25,4 @@ instalador/Salida/
 # Datos personales: nunca al repositorio
 *.adi
 Pako_trafico.log
+/Pako_2.0.1_instalador/Salida
