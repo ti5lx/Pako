@@ -19,7 +19,7 @@ CÓDIGO FUENTE
 
 El código fuente completo de esta versión está disponible en:
 
-    [ESCRIBE AQUÍ LA DIRECCIÓN DONDE PUBLICAS EL CÓDIGO FUENTE]
+    https://github.com/ti5lx/Pako
 
 Incluye el programa en Visual Basic .NET, FT8Core (C++), el envoltorio
 jtty_pako.f90 y el script con que se compila jtty_pako.dll.
