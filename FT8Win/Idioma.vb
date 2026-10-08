@@ -403,6 +403,8 @@ Public Module Idioma
     End Sub
     Private Sub Cargar9()
         ' PTT por CAT y modo del radio
+        A("Mostrar espectro debajo de la cascada", "", "Show spectrum below the waterfall", "Spektrum unter dem Wasserfall anzeigen", "Mostrar espectro abaixo da cascata", "Показывать спектр под водопадом", "在瀑布图下方显示频谱", "ウォーターフォールの下にスペクトルを表示")
+        A("PROBABLEMENTE PARA TI: tu indicativo llego incompleto. Pide repeticion con F7 (AGN?).", "PROBABLEMENTE PARA TI: tu indicativo llegó incompleto. Pide repetición con F7 (AGN?).", "PROBABLY FOR YOU: your callsign arrived incomplete. Ask for a repeat with F7 (AGN?).", "WAHRSCHEINLICH FÜR DICH: Dein Rufzeichen kam unvollständig an. Bitte mit F7 (AGN?) um Wiederholung.", "PROVAVELMENTE PARA VOCÊ: seu indicativo chegou incompleto. Peça repetição com F7 (AGN?).", "ВЕРОЯТНО ДЛЯ ВАС: ваш позывной принят не полностью. Запросите повтор клавишей F7 (AGN?).", "可能是发给你的：你的呼号接收不完整。请按 F7 (AGN?) 请求重发。", "おそらくあなた宛て：コールサインが不完全に受信されました。F7 (AGN?) で再送を依頼してください。")
         A("Modo del radio", "", "Radio mode", "Betriebsart des Funkgeräts", "Modo do rádio", "Режим радиостанции", "电台模式", "無線機のモード")
         A("DATA (USB de datos, PKTUSB)", "", "DATA (data USB, PKTUSB)", "DATA (Daten-USB, PKTUSB)", "DATA (USB de dados, PKTUSB)", "DATA (цифровой USB, PKTUSB)", "DATA（数据 USB，PKTUSB）", "DATA（データ USB、PKTUSB）")
         A("No cambiar el modo", "", "Do not change the mode", "Betriebsart nicht ändern", "Não mudar o modo", "Не менять режим", "不改变模式", "モードを変更しない")

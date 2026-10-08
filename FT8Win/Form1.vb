@@ -84,6 +84,8 @@ Public Class Form1
     ' Guardado automatico: 1 s despues del ultimo cambio (asi no se guarda en cada tecla)
     Private WithEvents tmrGuardar As New System.Windows.Forms.Timer() With {.Interval = 1000}
     Private cargandoConfig As Boolean = False
+    Private espectroInicial As Boolean = True       ' se lee del registro al armar el menu
+    Private Const AltoCascada As Integer = 190      ' alto de la cascada sin el espectro
 
     ' ==================================================================
     ' Recepcion
@@ -342,7 +344,7 @@ Public Class Form1
         ' ================= WATERFALL =================
         ' (clic izquierdo = RX, clic derecho = TX)
         cascada.Dock = DockStyle.Top
-        cascada.Height = 190
+        PonerEspectro(espectroInicial)
         cascada.FrecTx = CSng(numFrecTx.Value)
         Me.Controls.Add(cascada)
         AddHandler numFrecTx.ValueChanged, Sub() cascada.FrecTx = CSng(numFrecTx.Value)
@@ -744,6 +746,23 @@ Public Class Form1
                 ConectarCat()
             End Sub)
         mnuConfigurar.DropDownItems.Add(mnuPsk)
+        ' Linea de espectro (amplitud) debajo de la cascada
+        Dim mnuEspectro As New ToolStripMenuItem(Tr("Mostrar espectro debajo de la cascada")) With {.CheckOnClick = True}
+        Try
+            mnuEspectro.Checked = (GetSetting("Pako", "Opciones", "Espectro", "1") = "1")
+        Catch
+            mnuEspectro.Checked = True
+        End Try
+        AddHandler mnuEspectro.CheckedChanged,
+            Sub()
+                PonerEspectro(mnuEspectro.Checked)
+                Try
+                    SaveSetting("Pako", "Opciones", "Espectro", If(mnuEspectro.Checked, "1", "0"))
+                Catch
+                End Try
+            End Sub
+        mnuConfigurar.DropDownItems.Add(mnuEspectro)
+        espectroInicial = mnuEspectro.Checked
         mnuPsk.Text = Tr("Reportar a PSKReporter")
         mnuPsk.CheckOnClick = True
         mnuPsk.ToolTipText = Tr("Envia a pskreporter.info las estaciones que Pako escucha (cada 5 minutos). Aparecen en el mapa de PSKReporter como escuchadas por tu indicativo.")
@@ -1196,6 +1215,12 @@ Public Class Form1
         End If
     End Sub
 
+    ' Mostrar u ocultar la linea de espectro: la cascada conserva su alto y el espectro se suma debajo
+    Private Sub PonerEspectro(mostrar As Boolean)
+        cascada.MostrarEspectro = mostrar
+        cascada.Height = AltoCascada + If(mostrar, cascada.AltoPanelEspectro, 0)
+    End Sub
+
     ' Clic en el waterfall: esa es la nueva frecuencia de TX
     ' Clic en el waterfall: izquierdo = RX (verde), derecho = TX (rojo), Ctrl + clic = los dos
     Private Sub cascada_ClicFrecuencia(frecuencia As Single, cual As Integer) Handles cascada.ClicFrecuencia
@@ -1353,6 +1378,10 @@ Public Class Form1
                 sb.AppendLine(If(d.Completo, Tr("Mensaje completo (llego la marca de fin)."),
                                              Tr("Mensaje en curso o cortado: el texto puede seguir creciendo.")))
                 If d.Emisor <> "" AndAlso d.Pais <> "" Then sb.AppendLine(d.Emisor & " (" & d.Pais & ")")
+                If ParaMiJtty(d.Texto) Then
+                    sb.AppendLine(If(Array.IndexOf(d.Texto.Split(" "c), MiCall) >= 0, "<<< " & Tr("DIRIGIDO A TI"),
+                                     "<<< " & Tr("PROBABLEMENTE PARA TI: tu indicativo llego incompleto. Pide repeticion con F7 (AGN?).")))
+                End If
                 sb.AppendLine(Tr("Doble clic para contestar."))
             End If
             Return sb.ToString().TrimEnd()
@@ -1507,7 +1536,7 @@ Public Class Form1
             Dim esCq As Boolean = d.Texto.StartsWith("CQ ")
             If d.EsTx Then
                 fondo = Color.Khaki
-            ElseIf Tokens(d.Texto).Contains(MiCall) Then
+            ElseIf Tokens(d.Texto).Contains(MiCall) OrElse (d.EsJtty AndAlso ParaMiJtty(d.Texto)) Then
                 fondo = Color.LightCoral
             ElseIf d.Nuevo = Novedad.NuevoPais Then
                 fondo = Color.Violet
@@ -2874,9 +2903,28 @@ Public Class Form1
         If k >= 0 AndAlso k + 1 < t.Length AndAlso PareceIndicativo(t(k + 1)) Then Return t(k + 1)
         If Not adivinar AndAlso Array.IndexOf(t, "CQ") < 0 AndAlso Array.IndexOf(t, mi) < 0 Then Return ""
         For i As Integer = t.Length - 1 To 0 Step -1
-            If t(i) <> mi AndAlso PareceIndicativo(t(i)) Then Return t(i)
+            ' (un pedazo de mi propio indicativo, cortado por una trama perdida, no es otra estacion)
+            If t(i) <> mi AndAlso Not mi.StartsWith(t(i)) AndAlso PareceIndicativo(t(i)) Then Return t(i)
         Next
         Return ""
+    End Function
+
+    ' Un mensaje de JTTY es para mi si trae mi indicativo completo, o un pedazo de el pegado a una
+    ' trama perdida: "TI5GA ... UR 599" (el texto libre va de 5 en 5 letras y el indicativo puede quedar partido)
+    Private Function ParaMiJtty(texto As String) As Boolean
+        Dim mi As String = MiCall
+        If mi.Length < 4 Then Return False
+        Dim t = texto.Split({" "c}, StringSplitOptions.RemoveEmptyEntries)
+        If Array.IndexOf(t, mi) >= 0 Then Return True
+        ' Indicativo partido en dos tramas seguidas: "TI5GA X UR 599"
+        If texto.Replace(" ", "").Contains(mi) AndAlso Array.IndexOf(t, "CQ") < 0 Then Return True
+        For i As Integer = 0 To t.Length - 1
+            If t(i).Length < 4 OrElse t(i).Length >= mi.Length Then Continue For
+            ' principio de mi indicativo y despues una trama perdida, o al reves
+            If mi.StartsWith(t(i)) AndAlso i + 1 < t.Length AndAlso t(i + 1) = "..." Then Return True
+            If mi.EndsWith(t(i)) AndAlso i > 0 AndAlso t(i - 1) = "..." Then Return True
+        Next
+        Return False
     End Function
 
     ' Doble clic en un mensaje de JTTY: RX y TX a su frecuencia, y queda listo el mensaje que sigue
@@ -2947,7 +2995,7 @@ Public Class Form1
         leyendoOpcionesMacro = True
         Try
             Dim serie As Integer = CInt(Val(GetSetting("Pako", "Macros", "Serie", "1")))
-            Dim seg As Integer = CInt(Val(GetSetting("Pako", "Macros", "AutoCqSeg", "8")))
+            Dim seg As Integer = CInt(Val(GetSetting("Pako", "Macros", "AutoCqSeg", "12")))
             numSerie.Value = Math.Max(numSerie.Minimum, Math.Min(numSerie.Maximum, serie))
             numAutoCq.Value = Math.Max(numAutoCq.Minimum, Math.Min(numAutoCq.Maximum, seg))
             chkAutoCq.Checked = (GetSetting("Pako", "Macros", "AutoCq", "0") = "1")
@@ -3066,7 +3114,7 @@ Public Class Form1
         Dim t = d.Texto.Split({" "c}, StringSplitOptions.RemoveEmptyEntries)
         If t.Length = 0 Then Return
         Dim mi As String = MiCall
-        Dim paraMi As Boolean = Array.IndexOf(t, mi) >= 0
+        Dim paraMi As Boolean = ParaMiJtty(d.Texto)
         Dim cerca As Boolean = CercaDeRx(d) OrElse Math.Abs(d.Freq - CSng(numFrecTx.Value)) <= AnchoJttyHz * 0.6F
         Dim quien As String = ""
         If t.Length = 1 Then
@@ -3565,6 +3613,37 @@ Public Class Cascada
     Public FMax As Single = 3000
     Private Const AltoEscala As Integer = 18
 
+    ' Espectro (amplitud) debajo de la cascada: dB sobre el ruido en cada pixel
+    Public Const AltoEspectro As Integer = 64
+    Private Const RangoEspectroDb As Single = 36        ' de abajo (ruido) hasta arriba del panel
+    Private espectro As Single()
+    Private mostrarEspectroValor As Boolean = True
+
+    Public Property MostrarEspectro As Boolean
+        Get
+            Return mostrarEspectroValor
+        End Get
+        Set(value As Boolean)
+            If value = mostrarEspectroValor Then Return
+            mostrarEspectroValor = value
+            RecrearImagen()
+            Me.Invalidate()
+        End Set
+    End Property
+
+    Public ReadOnly Property AltoPanelEspectro As Integer
+        Get
+            Return AltoEspectro
+        End Get
+    End Property
+
+    ' Alto de la parte de la cascada (sin el panel del espectro)
+    Private ReadOnly Property AltoCascada As Integer
+        Get
+            Return Math.Max(1, Me.Height - If(mostrarEspectroValor, AltoEspectro, 0))
+        End Get
+    End Property
+
     Private bmp As Bitmap
     Private fila As Integer = 0                             ' fila donde esta la linea mas nueva
     Private etiquetas As New Dictionary(Of Integer, String) ' fila -> hora del ciclo
@@ -3621,11 +3700,17 @@ Public Class Cascada
 
     Protected Overrides Sub OnResize(e As EventArgs)
         MyBase.OnResize(e)
+        RecrearImagen()
+        Me.Invalidate()
+    End Sub
+
+    Private Sub RecrearImagen()
         SyncLock candado
             bmp?.Dispose()
             bmp = Nothing
+            espectro = Nothing
             If Me.Width > 0 AndAlso Me.Height > 0 Then
-                bmp = New Bitmap(Me.Width, Me.Height, PixelFormat.Format32bppRgb)
+                bmp = New Bitmap(Me.Width, AltoCascada, PixelFormat.Format32bppRgb)
                 Using g = Graphics.FromImage(bmp)
                     g.Clear(Color.Black)
                 End Using
@@ -3633,7 +3718,6 @@ Public Class Cascada
             fila = 0
             etiquetas.Clear()
         End SyncLock
-        Me.Invalidate()
     End Sub
 
     ' Agregar un espectro (dB por bin). Se puede llamar desde el hilo de audio.
@@ -3661,6 +3745,18 @@ Public Class Cascada
             Array.Sort(orden)
             Dim mediana As Single = orden(ancho \ 2)
             pisoRuido = If(Single.IsNaN(pisoRuido), mediana, pisoRuido * 0.95F + mediana * 0.05F)
+
+            ' Espectro: dB sobre el ruido, suavizado en el tiempo (una linea cada 0.17 s)
+            If espectro Is Nothing OrElse espectro.Length <> ancho Then
+                espectro = New Single(ancho - 1) {}
+                For x As Integer = 0 To ancho - 1
+                    espectro(x) = px(x) - pisoRuido
+                Next
+            Else
+                For x As Integer = 0 To ancho - 1
+                    espectro(x) = espectro(x) * 0.6F + (px(x) - pisoRuido) * 0.4F
+                Next
+            End If
 
             ' Colores: el ruido queda azul oscuro; +30 dB sobre el ruido = blanco
             Dim colores(ancho - 1) As Integer
@@ -3703,6 +3799,7 @@ Public Class Cascada
                     If y > AltoEscala Then TextRenderer.DrawText(g, kv.Value, f, New Point(2, y + 1), Color.White)
                 Next
             End Using
+            If mostrarEspectroValor Then DibujarEspectro(g, alto)
         End SyncLock
 
         ' Escala de frecuencias arriba
@@ -3737,6 +3834,33 @@ Public Class Cascada
         End Using
         Using linea As New Pen(Color.FromArgb(140, 255, 0, 0))
             g.DrawLine(linea, xTx, AltoEscala, xTx, Me.Height)
+        End Using
+    End Sub
+
+    ' Panel del espectro: linea verde de amplitud (dB sobre el ruido) en cada frecuencia
+    Private Sub DibujarEspectro(g As Graphics, y0 As Integer)
+        Dim alto As Integer = Me.Height - y0
+        If alto <= 4 Then Return
+        Using fondo As New SolidBrush(Color.FromArgb(10, 10, 20))
+            g.FillRectangle(fondo, 0, y0, Me.Width, alto)
+        End Using
+        ' Rejilla cada 10 dB
+        Using rejilla As New Pen(Color.FromArgb(55, 55, 70)) With {.DashStyle = System.Drawing.Drawing2D.DashStyle.Dot}
+            For db As Integer = 10 To CInt(RangoEspectroDb) Step 10
+                Dim yr As Single = y0 + alto - 3 - db / RangoEspectroDb * (alto - 6)
+                g.DrawLine(rejilla, 0, yr, Me.Width, yr)
+            Next
+        End Using
+        g.DrawLine(Pens.DimGray, 0, y0, Me.Width, y0)
+        If espectro Is Nothing OrElse espectro.Length < 2 Then Return
+
+        Dim puntos(espectro.Length - 1) As PointF
+        For x As Integer = 0 To espectro.Length - 1
+            Dim v As Single = Math.Max(0, Math.Min(RangoEspectroDb, espectro(x)))
+            puntos(x) = New PointF(x, y0 + alto - 3 - v / RangoEspectroDb * (alto - 6))
+        Next
+        Using linea As New Pen(Color.LimeGreen, 1.0F)
+            g.DrawLines(linea, puntos)
         End Using
     End Sub
 
